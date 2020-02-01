@@ -8,12 +8,13 @@ contract EventTicketsV2 {
     /*
         Define an public owner variable. Set it to the creator of the contract when it is initialized.
     */
-    uint   PRICE_TICKET = 100 wei;
+    uint public PRICE_TICKET = 100 wei;
 
     /*
         Create a variable to keep track of the event ID numbers.
     */
     uint public idGenerator;
+    unit public eventnumbers;
 
     /*
         Define an Event struct, similar to the V1 of this contract.
@@ -21,6 +22,7 @@ contract EventTicketsV2 {
         Choose the appropriate variable type for each field.
         The "buyers" field should keep track of addresses and how many tickets each buyer purchases.
     */
+    
 
     /*
         Create a mapping to keep track of the events.
