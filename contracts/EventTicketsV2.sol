@@ -8,6 +8,7 @@ contract EventTicketsV2 {
     /*
         Define an public owner variable. Set it to the creator of the contract when it is initialized.
     */
+    address public owner;
     uint public PRICE_TICKET = 100 wei;
 
     /*
