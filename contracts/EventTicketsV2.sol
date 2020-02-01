@@ -87,22 +87,16 @@ contract EventTicketsV2 {
             - emit the appropriate event
             - return the event's ID
     */
-    function addEvent(
-            string memory _description,
-            string memory _website,
-            uint _totalTickets)
-        public
-        isOwner()
-        returns (uint _eventId) {
+    function addEvent(string memory _description, string memory _website, uint _totalTickets) public isOwner() returns (uint _eventId) {
             _eventId = idGenerator;
-            Event memory newEvent;
-            newEvent.description = _description;
-            newEvent.website = _website;
-            newEvent.totalTickets = _totalTickets;
-            newEvent.isOpen = true;
-            events[_eventId] = newEvent;
+            Event memory e;
+            e.description = _description;
+            e.website = _website;
+            e.totalTickets = _totalTickets;
+            e.isOpen = true;
+            events[_eventId] = e;
             idGenerator++;
-            emit LogEventAdded(newEvent.description, newEvent.website, newEvent.totalTickets, _eventId);
+            emit LogEventAdded(e.description, e.website, e.totalTickets, _eventId);
     }
 
     /*
