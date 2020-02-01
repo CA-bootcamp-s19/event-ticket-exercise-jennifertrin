@@ -63,7 +63,7 @@ contract EventTicketsV2 {
             - emit the appropriate event
             - return the event's ID
     */
-    function addEvent(string eventdescription, string url, uint numberTickets)public ifOwner
+    function addEvent(string memory eventdescription, string memory url, uint memory numberTickets)public ifOwner
         returns (uint eventId)
     {
         eventId = eventsCount++;
@@ -74,7 +74,7 @@ contract EventTicketsV2 {
             isOpen: true,
             sales: 0
         });
-        emit LogEventAdded(evendescription, url, numberTickets, eventId);
+        emit LogEventAdded(eventdescription, url, numberTickets, eventId);
     }
 
     /*
