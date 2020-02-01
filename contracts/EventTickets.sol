@@ -21,7 +21,7 @@ contract EventTickets {
         The "buyers" field should keep track of addresses and how many tickets each buyer purchases.
     */
 
-    Event my event;
+    Event myevent;
     struct Event {
         string description;
         string website;
