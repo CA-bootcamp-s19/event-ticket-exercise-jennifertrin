@@ -11,8 +11,9 @@ contract EventTickets {
         Use the appropriate keyword to create an associated getter function.
         Use the appropriate keyword to allow ether transfers.
      */
-    address payable public owner;
-    uint   TICKET_PRICE = 100 wei;
+     address payable public owner;
+
+    uint TICKET_PRICE = 100 wei;
 
     /*
         Create a struct called "Event".
@@ -20,8 +21,6 @@ contract EventTickets {
         Choose the appropriate variable type for each field.
         The "buyers" field should keep track of addresses and how many tickets each buyer purchases.
     */
-
-    Event myevent;
     struct Event {
         string description;
         string website;
@@ -31,51 +30,85 @@ contract EventTickets {
         bool isOpen;
     }
 
+    Event private myEvent;
+
     /*
         Define 3 logging events.
         LogBuyTickets should provide information about the purchaser and the number of tickets purchased.
         LogGetRefund should provide information about the refund requester and the number of tickets refunded.
-        LogEndSale should provide infromation about the contract owner and the balance transferred to them.
+        LogEndSale should provide information about the contract owner and the balance transferred to them.
     */
-    event LogBuyTickets(address buyer, uint quantity);
-    event LogGetRefund(address payable requester, uint quantity);
-    event LogEndSale(address payable owner, uint earnings);
-    
+    event LogBuyTickets(address indexed purchaser, uint indexed totalTickets);
+    event LogGetRefund(address indexed requester, uint indexed totalTickets);
+    event LogEndSale(address indexed owner, uint indexed payment);
+    event ReadEvent(string description, string website, uint totalTickets, uint sales, bool isOpen);
 
     /*
         Create a modifier that throws an error if the msg.sender is not the owner.
     */
-    modifier ifOwner() {
-        require(msg.sender == owner, "You are not the owner");
+    modifier isOwner {
+        require(msg.sender == owner, 'Owner not verified');
         _;
     }
 
+    modifier isEventOpen {
+        require(myEvent.isOpen == true, 'Event is no longer open');
+        _;
+    }
+
+    modifier paidEnough(uint _totalTickets) {
+        require(_totalTickets * TICKET_PRICE <= msg.value, 'Payment incomplete');
+        _;
+    }
+
+    modifier ticketsEnough(uint _totalTickets) {
+        require(myEvent.totalTickets >= _totalTickets, 'Not enough tickets availables');
+        _;
+    }
+
+    modifier hasTickets() {
+        require(myEvent.buyers[msg.sender] > 0, 'Buyer has no previous tickets');
+        _;
+    }
     /*
         Define a constructor.
         The constructor takes 3 arguments, the description, the URL and the number of tickets for sale.
         Set the owner to the creator of the contract.
         Set the appropriate myEvent details.
     */
-    constructor(string description, string website, uint _totalTickets) public
-    {
+    constructor(
+        string memory _description,
+        string memory _website,
+        uint _totalTickets
+    ) public {
         owner = msg.sender;
         myEvent.description = _description;
         myEvent.website = _website;
         myEvent.totalTickets = _totalTickets;
+        myEvent.sales = 0;
         myEvent.isOpen = true;
     }
-    
 
     /*
         Define a function called readEvent() that returns the event details.
         This function does not modify state, add the appropriate keyword.
-        The returned details should be called description, website, uint numberTickets, uint sales, bool isOpen in that order.
+        The returned details should be called description, website, uint totalTickets, uint sales, bool isOpen in that order.
     */
     function readEvent()
         public
-        returns(string memory description, string memory website, uint numberTickets, uint sales, bool isOpen)
+        view
+        returns(
+            string memory description,
+            string memory website,
+            uint totalTickets,
+            uint sales,
+            bool isOpen)
     {
-
+        description = myEvent.description;
+        website = myEvent.website;
+        totalTickets = myEvent.totalTickets;
+        sales = myEvent.sales;
+        isOpen = myEvent.isOpen;
     }
 
     /*
@@ -83,8 +116,12 @@ contract EventTickets {
         This function takes 1 argument, an address and
         returns the number of tickets that address has purchased.
     */
-    function getBuyerNumberTickets(uint eventId) public view returns (uint){
-        return events[eventId].buyers[msg.sender];
+    function getBuyerTicketCount(address buyer)
+        public
+        view
+        returns(uint totalTickets)
+    {
+        return myEvent.buyers[buyer];
     }
 
     /*
@@ -102,20 +139,17 @@ contract EventTickets {
             - refund any surplus value sent with the transaction
             - emit the appropriate event
     */
-    function buyTickets(uint _id, uint numberTickets) public
+    function buyTickets(uint _totalTickets)
+        public
         payable
-    {
-        Event storage selected = events[_id];
-        uint numberTickets = price_ticket * _quantity;
-        require(selected.isOpen, "Closed event not available");
-        require(numberTickets <= msg.value, "Not enough money to buy");
-        require(numberTickets <= selected.numberTickets - selected.sales, "Not enough available tickets");
-
-        selected.buyers[msg.sender] += _quantity;
-        selected.sales += _quantity;
-        uint refund = msg.value - total;
-        msg.sender.transfer(refund);
-        emit BuyTickets(msg.sender, _id, _quantity);
+        isEventOpen()
+        paidEnough(_totalTickets)
+        ticketsEnough(_totalTickets) {
+        myEvent.buyers[msg.sender] += _totalTickets;
+        myEvent.totalTickets -= _totalTickets;
+        msg.sender.transfer(msg.value - (_totalTickets * TICKET_PRICE));
+        myEvent.sales += _totalTickets;
+        emit LogBuyTickets(msg.sender, myEvent.sales);
     }
 
     /*
@@ -127,21 +161,17 @@ contract EventTickets {
             - Transfer the appropriate amount to the refund requester.
             - Emit the appropriate event.
     */
-     function getRefund(uint eventId)public {
-            Event storage anEvent = events[eventId];
-
-            uint ticketsPurchased = anEvent.buyers[msg.sender];
-            require(ticketsPurchased > 0, "Buyer didn't buy tickets.");
-
-            anEvent.sales -= ticketsPurchased;
-            anEvent.buyers[msg.sender] = 0;
-            uint totalCost = ticketsPurchased * PRICE_TICKET;
-            msg.sender.transfer(totalCost);
-            emit LogGetRefund(
-                msg.sender,
-                totalCost,
-                ticketsPurchased
-            );
+    function getRefund()
+        public
+        payable
+        hasTickets() {
+        uint totalTickets = myEvent.buyers[msg.sender];
+        require(myEvent.isOpen == true, 'Event is already closed');
+        myEvent.totalTickets += totalTickets;
+        myEvent.buyers[msg.sender] -= totalTickets;
+        myEvent.sales -= totalTickets;
+        msg.sender.transfer(totalTickets * TICKET_PRICE);
+        emit LogGetRefund(msg.sender, totalTickets);
     }
 
     /*
@@ -153,7 +183,13 @@ contract EventTickets {
             - transfer the contract balance to the owner
             - emit the appropriate event
     */
-    function endSale(uint eventId) public
-        ifOwner {
-        events[eventId].isOpen = false;
+    function endSale()
+        public
+        payable
+        isEventOpen()
+        isOwner() {
+        myEvent.isOpen = false;
+        owner.transfer(address(this).balance);
+        emit LogEndSale(msg.sender, address(this).balance);
+    }
 }
