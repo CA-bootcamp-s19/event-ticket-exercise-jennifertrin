@@ -14,6 +14,7 @@ contract EventTicketsV2 {
     /*
         Create a variable to keep track of the event ID numbers.
     */
+    uint eventCount;
     uint public idGenerator;
 
     /*
@@ -47,7 +48,7 @@ contract EventTicketsV2 {
     /*
         Create a modifier that throws an error if the msg.sender is not the owner.
     */
-    modifier ifOwner () {
+    modifier isOwner () {
         require (msg.sender == owner, 'You are not the owner');
         _;
     }
@@ -64,7 +65,7 @@ contract EventTicketsV2 {
             - emit the appropriate event
             - return the event's ID
     */
-    function addEvent(string memory eventdescription, string memory url, uint memory numberTickets)public ifOwner
+    function addEvent(string memory eventdescription, string memory url, uint memory numberTickets)public isOwner
         returns (uint eventId)
     {
         eventId = eventsCount++;
@@ -136,12 +137,10 @@ contract EventTicketsV2 {
             - send appropriate value to the refund requester
             - emit the appropriate event
     */
-    function getRefund(uint eventId)public {
+    function getRefund(uint eventId)public payable {
             Event storage anEvent = events[eventId];
-
             uint ticketsPurchased = anEvent.buyers[msg.sender];
             require(ticketsPurchased > 0, "Buyer didn't buy tickets.");
-
             anEvent.sales -= ticketsPurchased;
             anEvent.buyers[msg.sender] = 0;
             uint totalCost = ticketsPurchased * PRICE_TICKET;
@@ -159,7 +158,7 @@ contract EventTicketsV2 {
         This function returns a uint, the number of tickets that the msg.sender has purchased.
     */
      function getBuyerNumberTickets(uint eventId) public view returns (uint){
-        return events[eventId].buyers[msg.sender];
+        return (events[eventId].buyers[msg.sender]);
     }
    
 
@@ -173,7 +172,6 @@ contract EventTicketsV2 {
             - emit the appropriate event
     */
      function endSale(uint eventId) public
-        ifOwner {
-        
+        isOwner() {
         events[eventId].isOpen = false;
 }
